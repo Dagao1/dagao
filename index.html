@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 仓库文件管理器 · 带 AI</title>
+    <style>
+        /* ===== 全局重置 & 基础 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background: linear-gradient(145deg, #f6f8fa 0%, #e9ecf0 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .app-wrapper {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            padding: 30px 30px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.10), 0 8px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1f2328;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 16px;
+            font-weight: 400;
+            color: #57606a;
+            margin-left: 8px;
+            background: #eaeef2;
+            padding: 2px 14px;
+            border-radius: 40px;
+        }
+        .header-decoration {
+            height: 4px;
+            width: 80px;
+            background: linear-gradient(90deg, #2da44e, #1a7f37);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        /* ===== 登录/注册卡片 ===== */
+        #auth-container {
+            max-width: 420px;
+            margin: 40px auto;
+            background: white;
+            padding: 36px 32px;
+            border-radius: 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        #auth-container h2 {
+            text-align: center;
+            font-weight: 500;
+            color: #1f2328;
+            margin-bottom: 24px;
+            font-size: 26px;
+        }
+        #auth-container .input-group {
+            margin-bottom: 16px;
+        }
+        #auth-container label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #24292f;
+            margin-bottom: 4px;
+        }
+        #auth-container input[type="text"],
+        #auth-container input[type="password"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #d0d7de;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: 0.2s;
+            background: #f6f8fa;
+        }
+        #auth-container input:focus {
+            border-color: #2da44e;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(45, 164, 78, 0.15);
+        }
+        #auth-container .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0 18px;
+        }
+        #auth-container .remember-me input {
+            width: 18px;
+            height: 18px;
+            accent-color: #2da44e;
+            margin: 0;
+        }
+        #auth-container button {
+            width: 100%;
+            padding: 14px;
+            background: #2da44e;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 8px rgba(45, 164, 78, 0.2);
+        }
+        #auth-container button:hover {
+            background: #22863a;
+            transform: scale(1.01);
+        }
+        #auth-container .switch {
+            text-align: center;
+            margin-top: 18px;
+            color: #0969da;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        #auth-container .switch:hover { text-decoration: underline; }
+        #auth-error {
+            color: #cf222e;
+            font-size: 14px;
+            margin-top: 8px;
+            text-align: center;
+            min-height: 24px;
+        }
+
+        /* ===== 主界面头部 ===== */
+        #main-container {
+            display: none;
+        }
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin: 18px 0 16px;
+            padding: 16px 18px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .top-bar .user-info {
+            font-weight: 500;
+            color: #1f2328;
+            background: #ddf4ff;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .top-bar input {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 14px;
+            border: 1.5px solid #d0d7de;
+            border-radius: 40px;
+            font-size: 14px;
+            background: #f6f8fa;
+            transition: 0.2s;
+        }
+        .top-bar input:focus {
+            border-color: #2da44e;
+            background: white;
+            outline: none;
+        }
+        .top-bar button {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .btn-green {
+            background: #2da44e;
+            color: white;
+            box-shadow: 0 2px 6px rgba(45, 164, 78, 0.25);
+        }
+        .btn-green:hover { background: #22863a; transform: scale(1.02); }
+        .btn-red {
+            background: #d73a49;
+            color: white;
+        }
+        .btn-red:hover { background: #b31d2c; }
+
+        /* ===== 上传区域 ===== */
+        .upload-zone {
+            background: white;
+            border: 2px dashed #d0d7de;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            transition: 0.2s;
+        }
+        .upload-zone:hover {
+            border-color: #2da44e;
+            background: #fafffc;
+        }
+        .upload-zone input[type="file"] {
+            flex: 1;
+            min-width: 150px;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        .upload-zone button {
+            background: #2da44e;
+            color: white;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 2px 8px rgba(45, 164, 78, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .upload-zone button:hover { background: #22863a; transform: scale(1.02); }
+        #upload-status {
+            font-size: 14px;
+            color: #57606a;
+            margin-left: auto;
+            background: #f6f8fa;
+            padding: 4px 16px;
+            border-radius: 40px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* ===== 面包屑 & 列表 ===== */
+        #breadcrumb {
+            margin: 8px 0 14px;
+            font-size: 15px;
+            padding: 8px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        #breadcrumb span {
+            cursor: pointer;
+            color: #0969da;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 20px;
+            transition: 0.1s;
+        }
+        #breadcrumb span:hover {
+            background: #ddf4ff;
+            text-decoration: none;
+        }
+        #breadcrumb .sep { color: #8b949e; cursor: default; padding: 0 2px; }
+
+        ul#fileList {
+            list-style: none;
+            padding: 0;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #eaeef2;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+        #fileList li {
+            padding: 14px 20px;
+            border-bottom: 1px solid #f0f2f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.1s;
+        }
+        #fileList li:last-child { border-bottom: none; }
+        #fileList li:hover { background: #f6f8fa; }
+        #fileList .name {
+            cursor: pointer;
+            color: #0969da;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            font-size: 15px;
+            flex: 1;
+        }
+        #fileList .name:hover { text-decoration: underline; }
+        #fileList .name .icon { font-size: 22px; line-height: 1; }
+        #fileList .actions {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+        #fileList .actions a {
+            color: #57606a;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: 0.1s;
+        }
+        #fileList .actions a:hover {
+            background: #ddf4ff;
+            color: #0969da;
+        }
+
+        /* ===== 文件内容预览 ===== */
+        #file-content {
+            background: white;
+            padding: 24px 28px;
+            border-radius: 20px;
+            border: 1px solid #eaeef2;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 500px;
+            overflow: auto;
+            margin-top: 24px;
+            display: none;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        /* ===== 空状态 ===== */
+        .empty-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8b949e;
+            font-size: 16px;
+        }
+        .empty-message .big-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+        /* ===== AI 浮动按钮 ===== */
+        #ai-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2da44e, #1a7f37);
+            color: white;
+            border: none;
+            box-shadow: 0 6px 20px rgba(45, 164, 78, 0.4);
+            font-size: 28px;
+            cursor: pointer;
+            transition: 0.3s;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #ai-fab:hover { transform: scale(1.08); }
+
+        /* ===== AI 聊天窗口 ===== */
+        #ai-panel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 400px;
+            max-width: calc(100vw - 60px);
+            height: 500px;
+            max-height: calc(100vh - 150px);
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+        }
+        #ai-panel.open { display: flex; }
+
+        #ai-header {
+            padding: 16px 20px;
+            background: #f6f8fa;
+            border-bottom: 1px solid #eaeef2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #1f2328;
+        }
+        #ai-header button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #57606a;
+        }
+
+        #ai-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #ffffff;
+        }
+        .ai-msg {
+            padding: 10px 16px;
+            border-radius: 16px;
+            max-width: 85%;
+            word-break: break-word;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        .ai-msg.user {
+            background: #2da44e;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-msg.bot {
+            background: #f0f2f5;
+            color: #1f2328;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .ai-msg .file-context {
+            font-size: 12px;
+            color: #57606a;
+            background: #eaeef2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+
+        #ai-input-area {
+            padding: 12px 16px 16px;
+            border-top: 1px solid #eaeef2;
+            display: flex;
+            gap: 10px;
+            background: white;
+        }
+        #ai-input-area input[type="text"] {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1.5px solid #d0d7de;
+            border-radius: 40px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+        #ai-input-area input[type="text"]:focus {
+            border-color: #2da44e;
+        }
+        #ai-input-area button {
+            padding: 10px 20px;
+            background: #2da44e;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        #ai-input-area button:hover { background: #22863a; }
+
+        #ai-settings {
+            padding: 8px 16px 12px;
+            background: #f6f8fa;
+            border-bottom: 1px solid #eaeef2;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        #ai-settings input {
+            flex: 1;
+            min-width: 120px;
+            padding: 6px 12px;
+            border: 1px solid #d0d7de;
+            border-radius: 20px;
+            font-size: 12px;
+            background: white;
+        }
+        #ai-settings label {
+            font-size: 12px;
+            color: #57606a;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 700px) {
+            .app-wrapper { padding: 16px; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .upload-zone { flex-direction: column; align-items: stretch; }
+            .upload-zone #upload-status { margin-left: 0; text-align: center; }
+            #fileList li { flex-wrap: wrap; gap: 8px; }
+            #ai-panel { width: calc(100vw - 40px); right: 20px; bottom: 80px; height: 60vh; }
+            #ai-fab { bottom: 20px; right: 20px; width: 56px; height: 56px; font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+    <!-- ===================================================== -->
+    <!-- 登录/注册界面 -->
+    <!-- ===================================================== -->
+    <div id="auth-container">
+        <h2>🔐 登录</h2>
+        <div id="auth-fields">
+            <div class="input-group">
+                <label>👤 用户名</label>
+                <input type="text" id="login-username" placeholder="请输入用户名">
+            </div>
+            <div class="input-group">
+                <label>🔑 密码</label>
+                <input type="password" id="login-password" placeholder="请输入密码">
+            </div>
+            <div class="remember-me">
+                <input type="checkbox" id="remember-checkbox">
+                <label for="remember-checkbox">记住我（自动填充）</label>
+            </div>
+            <button id="auth-submit">登录</button>
+            <div id="auth-error"></div>
+            <div class="switch" id="auth-switch">还没有账号？去注册</div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- 主应用界面 -->
+    <!-- ===================================================== -->
+    <div id="main-container">
+
+        <h1>
+            📦 仓库文件管理器
+            <small id="repoDisplay">用户名/仓库名</small>
+        </h1>
+        <div class="header-decoration"></div>
+
+        <!-- 顶部工具栏（含仓库配置） -->
+        <div class="top-bar">
+            <span class="user-info" id="current-user">👤 用户</span>
+            <input type="text" id="ownerInput" placeholder="GitHub 用户名" style="flex:1; min-width:100px;">
+            <input type="text" id="repoInput" placeholder="仓库名" style="flex:1; min-width:100px;">
+            <input type="text" id="tokenInput" placeholder="🔑 令牌（必需）" style="flex:1.5; min-width:120px;">
+            <input type="text" id="pathInput" placeholder="📁 路径（留空根目录）" style="flex:1; min-width:80px;">
+            <button class="btn-green" id="loadBtn">📥 加载</button>
+            <button class="btn-red" id="logout-btn">🚪 退出</button>
+        </div>
+
+        <!-- 上传区域 -->
+        <div class="upload-zone">
+            <span style="font-size:20px;">⬆️</span>
+            <input type="file" id="fileInput" multiple>
+            <button id="uploadBtn">📤 上传到当前目录</button>
+            <span id="upload-status">就绪</span>
+        </div>
+
+        <!-- 面包屑 -->
+        <div id="breadcrumb"></div>
+
+        <!-- 文件列表 -->
+        <ul id="fileList"></ul>
+
+        <!-- 文件内容预览 -->
+        <div id="file-content"></div>
+    </div>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- AI 浮动按钮 & 聊天面板 -->
+<!-- ===================================================== -->
+<button id="ai-fab" title="AI 助手">🤖</button>
+
+<div id="ai-panel">
+    <div id="ai-header">
+        <span>🤖 AI 智能助手 (DeepSeek)</span>
+        <button id="ai-close-btn">✕</button>
+    </div>
+    <div id="ai-settings">
+        <label>🔑 API Key</label>
+        <input type="password" id="ai-api-key" placeholder="输入你的 DeepSeek API Key">
+        <label>📦 模型</label>
+        <select id="ai-model" style="padding:4px 8px;border-radius:12px;border:1px solid #d0d7de;">
+            <option value="deepseek-chat">DeepSeek</option>
+            <option value="gpt-3.5-turbo">GPT-3.5</option>
+            <option value="gpt-4o-mini">GPT-4o mini</option>
+        </select>
+    </div>
+    <div id="ai-messages">
+        <div class="ai-msg bot">👋 你好！我是 AI 助手。你可以问我编程问题，或者让我分析当前预览的文件内容。</div>
+    </div>
+    <div id="ai-input-area">
+        <input type="text" id="ai-query" placeholder="输入你的问题...">
+        <button id="ai-send-btn">发送</button>
+    </div>
+</div>
+
+<script>
+    // ================================================================
+    //  1. 用户认证模块（基于 localStorage）
+    // ================================================================
+    const AUTH_KEY = 'users';
+    const SESSION_KEY = 'currentUser';
+    const REMEMBER_KEY = 'rememberMe';
+    const LAST_PATH_KEY = 'lastPath';
+    const CONFIG_KEY = 'repoConfig';  // 存储 { owner, repo }
+
+    const authContainer = document.getElementById('auth-container');
+    const mainContainer = document.getElementById('main-container');
+    const authTitle = document.querySelector('#auth-container h2');
+    const authSubmit = document.getElementById('auth-submit');
+    const authSwitch = document.getElementById('auth-switch');
+    const authError = document.getElementById('auth-error');
+    const loginUsername = document.getElementById('login-username');
+    const loginPassword = document.getElementById('login-password');
+    const rememberCheck = document.getElementById('remember-checkbox');
+    const currentUserSpan = document.getElementById('current-user');
+    const repoDisplay = document.getElementById('repoDisplay');
+
+    let isLoginMode = true;
+
+    function getUsers() {
+        try { return JSON.parse(localStorage.getItem(AUTH_KEY)) || {}; } catch { return {}; }
+    }
+    function saveUsers(users) { localStorage.setItem(AUTH_KEY, JSON.stringify(users)); }
+
+    function encode(pwd) { return btoa(pwd); }
+    function decode(encoded) { return atob(encoded); }
+
+    function register(username, password) {
+        const users = getUsers();
+        if (users[username]) return { success: false, msg: '用户名已存在' };
+        users[username] = encode(password);
+        saveUsers(users);
+        return { success: true };
+    }
+
+    function login(username, password) {
+        const users = getUsers();
+        if (!users[username]) return { success: false, msg: '用户名不存在' };
+        if (decode(users[username]) !== password) return { success: false, msg: '密码错误' };
+        return { success: true };
+    }
+
+    function toggleMode() {
+        isLoginMode = !isLoginMode;
+        authTitle.textContent = isLoginMode ? '🔐 登录' : '📝 注册';
+        authSubmit.textContent = isLoginMode ? '登录' : '注册';
+        authSwitch.textContent = isLoginMode ? '还没有账号？去注册' : '已有账号？去登录';
+        authError.textContent = '';
+        loginPassword.value = '';
+    }
+    authSwitch.addEventListener('click', toggleMode);
+
+    authSubmit.addEventListener('click', function() {
+        const username = loginUsername.value.trim();
+        const password = loginPassword.value.trim();
+        authError.textContent = '';
+        if (!username || !password) { authError.textContent = '请填写完整信息'; return; }
+
+        if (isLoginMode) {
+            const result = login(username, password);
+            if (!result.success) { authError.textContent = result.msg; return; }
+            doLogin(username, password);
+        } else {
+            const result = register(username, password);
+            if (!result.success) { authError.textContent = result.msg; return; }
+            alert('✅ 注册成功，请登录');
+            toggleMode();
+            loginUsername.value = username;
+            loginPassword.value = '';
+        }
+    });
+
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !mainContainer.classList.contains('hidden')) {
+            if (authContainer.style.display !== 'none') authSubmit.click();
+        }
+    });
+
+    function doLogin(username, password) {
+        localStorage.setItem(SESSION_KEY, username);
+        if (rememberCheck.checked) {
+            localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username, password }));
+        } else {
+            localStorage.removeItem(REMEMBER_KEY);
+        }
+        showMain(username);
+    }
+
+    function showMain(username) {
+        authContainer.style.display = 'none';
+        mainContainer.style.display = 'block';
+        currentUserSpan.textContent = '👤 ' + username;
+        // 恢复仓库配置
+        loadConfig();
+        // 恢复上次浏览的路径
+        const lastPath = localStorage.getItem(LAST_PATH_KEY) || '';
+        document.getElementById('pathInput').value = lastPath;
+        // 加载目录
+        loadPath(lastPath);
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+        localStorage.removeItem(SESSION_KEY);
+        authContainer.style.display = 'block';
+        mainContainer.style.display = 'none';
+        loginPassword.value = '';
+        authError.textContent = '';
+    });
+
+    function tryAutoLogin() {
+        const sessionUser = localStorage.getItem(SESSION_KEY);
+        if (sessionUser) {
+            const users = getUsers();
+            if (users[sessionUser]) {
+                showMain(sessionUser);
+                return true;
+            } else {
+                localStorage.removeItem(SESSION_KEY);
+            }
+        }
+        const rememberData = localStorage.getItem(REMEMBER_KEY);
+        if (rememberData) {
+            try {
+                const { username, password } = JSON.parse(rememberData);
+                loginUsername.value = username;
+                loginPassword.value = password;
+                rememberCheck.checked = true;
+                // 可选自动登录
+                // authSubmit.click();
+            } catch {}
+        }
+        return false;
+    }
+
+    // ================================================================
+    //  2. 仓库配置管理（可动态修改）
+    // ================================================================
+    let currentOwner = '';
+    let currentRepo = '';
+
+    const ownerInput = document.getElementById('ownerInput');
+    const repoInput = document.getElementById('repoInput');
+
+    function loadConfig() {
+        const saved = localStorage.getItem(CONFIG_KEY);
+        if (saved) {
+            try {
+                const { owner, repo } = JSON.parse(saved);
+                if (owner) ownerInput.value = owner;
+                if (repo) repoInput.value = repo;
+            } catch {}
+        }
+        updateConfig();
+    }
+
+    function updateConfig() {
+        const owner = ownerInput.value.trim();
+        const repo = repoInput.value.trim();
+        if (owner && repo) {
+            currentOwner = owner;
+            currentRepo = repo;
+            localStorage.setItem(CONFIG_KEY, JSON.stringify({ owner, repo }));
+            repoDisplay.textContent = `${owner}/${repo}`;
+            return true;
+        } else {
+            repoDisplay.textContent = '⚠️ 请填写用户名和仓库名';
+            return false;
+        }
+    }
+
+    function ensureConfig() {
+        const ok = updateConfig();
+        if (!ok) {
+            alert('请填写完整的 GitHub 用户名和仓库名');
+            return false;
+        }
+        return true;
+    }
+
+    // ================================================================
+    //  3. 仓库管理模块（含上传）
+    // ================================================================
+    let currentPath = '';
+    let token = '';
+
+    const tokenInput = document.getElementById('tokenInput');
+    const pathInput = document.getElementById('pathInput');
+    const loadBtn = document.getElementById('loadBtn');
+    const fileList = document.getElementById('fileList');
+    const breadcrumb = document.getElementById('breadcrumb');
+    const fileContent = document.getElementById('file-content');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadStatus = document.getElementById('upload-status');
+
+    function getHeaders() {
+        const headers = { 'Accept': 'application/vnd.github.v3+json' };
+        if (token) headers['Authorization'] = `token ${token}`;
+        return headers;
+    }
+
+    async function loadPath(path) {
+        if (!ensureConfig()) return;
+        currentPath = path || '';
+        if (localStorage.getItem(SESSION_KEY)) {
+            localStorage.setItem(LAST_PATH_KEY, currentPath);
+        }
+        const url = `https://api.github.com/repos/${currentOwner}/${currentRepo}/contents/${currentPath}`;
+        try {
+            const response = await fetch(url, { headers: getHeaders() });
+            if (!response.ok) {
+                if (response.status === 404) {
+                    const err = await response.json();
+                    if (err.message && err.message.includes('empty')) {
+                        fileList.innerHTML = `<div class="empty-message"><span class="big-icon">📭</span>此目录为空，上传文件吧！</div>`;
+                        fileContent.style.display = 'none';
+                        updateBreadcrumb(currentPath, false);
+                        return;
+                    }
+                }
+                const err = await response.json();
+                alert(`错误 ${response.status}: ${err.message || '未知错误'}`);
+                return;
+            }
+            const data = await response.json();
+
+            if (data.content) {
+                const content = atob(data.content.replace(/\n/g, ''));
+                fileContent.style.display = 'block';
+                fileContent.textContent = content;
+                fileList.innerHTML = '';
+                updateBreadcrumb(currentPath, true);
+                return;
+            }
+
+            fileContent.style.display = 'none';
+            renderFileList(data);
+            updateBreadcrumb(currentPath, false);
+        } catch (error) {
+            alert('网络错误：' + error.message);
+        }
+    }
+
+    function renderFileList(items) {
+        if (!items || items.length === 0) {
+            fileList.innerHTML = `<div class="empty-message"><span class="big-icon">📭</span>此目录为空，上传文件吧！</div>`;
+            return;
+        }
+        fileList.innerHTML = '';
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'name';
+            let icon = '📄';
+            if (item.type === 'dir') icon = '📁';
+            else if (/\.(png|jpe?g|gif|svg|webp|bmp|ico)$/i.test(item.name)) icon = '🖼️';
+            else if (/\.(mp4|webm|ogv|mov|avi|mkv)$/i.test(item.name)) icon = '🎬';
+            else if (/\.(mp3|wav|ogg|flac)$/i.test(item.name)) icon = '🎵';
+            else if (/\.(zip|rar|7z|tar|gz)$/i.test(item.name)) icon = '📦';
+            else if (/\.(md|txt|log|json|xml|yaml|toml)$/i.test(item.name)) icon = '📝';
+            nameSpan.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
+            nameSpan.addEventListener('click', () => loadPath(item.path));
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            if (item.type === 'file') {
+                const dl = document.createElement('a');
+                dl.href = item.download_url;
+                dl.download = item.name;
+                dl.textContent = '⬇️ 下载';
+                dl.target = '_blank';
+                actions.appendChild(dl);
+                const raw = document.createElement('a');
+                raw.href = item.html_url;
+                raw.textContent = '🔗 查看';
+                raw.target = '_blank';
+                actions.appendChild(raw);
+            }
+            li.appendChild(nameSpan);
+            li.appendChild(actions);
+            fileList.appendChild(li);
+        });
+    }
+
+    function updateBreadcrumb(path, isFile) {
+        breadcrumb.innerHTML = '';
+        const parts = path.split('/').filter(p => p);
+        const rootSpan = document.createElement('span');
+        rootSpan.textContent = '🏠 根目录';
+        rootSpan.addEventListener('click', () => loadPath(''));
+        breadcrumb.appendChild(rootSpan);
+
+        let accumulated = '';
+        parts.forEach((part, index) => {
+            accumulated += (index === 0 ? '' : '/') + part;
+            const span = document.createElement('span');
+            span.textContent = ` / ${part}`;
+            if (index === parts.length - 1 && isFile) {
+                span.style.cursor = 'default';
+                span.style.color = '#24292f';
+                span.style.fontWeight = '400';
+            } else {
+                span.addEventListener('click', () => loadPath(accumulated));
+            }
+            breadcrumb.appendChild(span);
+        });
+    }
+
+    // ---------- 上传文件 ----------
+    async function uploadFile(file) {
+        if (!token) throw new Error('请先输入 GitHub 令牌');
+        if (!ensureConfig()) throw new Error('请填写用户名和仓库名');
+
+        const fileName = file.name;
+        const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        uploadStatus.textContent = `⏳ 读取 ${fileName} ...`;
+
+        return new Promise((resolve, reject) => {
+            reader.onload = async function(e) {
+                try {
+                    const base64Content = e.target.result.split(',')[1];
+                    if (!base64Content) throw new Error('无法读取文件内容');
+
+                    uploadStatus.textContent = `⏳ 上传 ${fileName} ...`;
+
+                    const checkUrl = `https://api.github.com/repos/${currentOwner}/${currentRepo}/contents/${filePath}`;
+                    let sha = null;
+                    try {
+                        const checkResp = await fetch(checkUrl, { headers: getHeaders() });
+                        if (checkResp.status === 200) {
+                            const data = await checkResp.json();
+                            sha = data.sha;
+                        }
+                    } catch {}
+
+                    const body = {
+                        message: `上传 ${fileName}`,
+                        content: base64Content,
+                        branch: 'main'  // 若默认分支为 master 请修改
+                    };
+                    if (sha) body.sha = sha;
+
+                    const uploadUrl = `https://api.github.com/repos/${currentOwner}/${currentRepo}/contents/${filePath}`;
+                    const response = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: getHeaders(),
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(`失败 (${response.status}): ${err.message}`);
+                    }
+
+                    uploadStatus.textContent = `✅ ${fileName} 成功`;
+                    resolve();
+                } catch (error) {
+                    uploadStatus.textContent = `❌ ${fileName} 失败`;
+                    reject(error);
+                }
+            };
+            reader.onerror = () => reject(new Error('读取文件失败'));
+        });
+    }
+
+    async function uploadFiles(files) {
+        if (!files || files.length === 0) {
+            uploadStatus.textContent = '⚠️ 请选择文件';
+            return;
+        }
+        token = tokenInput.value.trim();
+        if (!token) {
+            uploadStatus.textContent = '❌ 请先输入令牌';
+            return;
+        }
+
+        let success = 0, fail = 0;
+        uploadStatus.textContent = `⏳ 开始上传 ${files.length} 个文件...`;
+
+        for (const file of files) {
+            try {
+                await uploadFile(file);
+                success++;
+            } catch (e) {
+                fail++;
+                console.error('上传失败:', file.name, e);
+            }
+        }
+
+        uploadStatus.textContent = `✅ 完成：成功 ${success} 个，失败 ${fail} 个`;
+        if (success > 0) loadPath(currentPath);
+    }
+
+    // ---------- 事件绑定 ----------
+    uploadBtn.addEventListener('click', function() {
+        uploadFiles(fileInput.files);
+    });
+
+    loadBtn.addEventListener('click', function() {
+        token = tokenInput.value.trim();
+        updateConfig();
+        const path = pathInput.value.trim();
+        loadPath(path);
+    });
+
+    pathInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') loadBtn.click();
+    });
+
+    ownerInput.addEventListener('change', updateConfig);
+    repoInput.addEventListener('change', updateConfig);
+
+    // ================================================================
+    //  4. AI 问答模块（DeepSeek 默认，兼容 OpenAI）
+    // ================================================================
+    const aiFab = document.getElementById('ai-fab');
+    const aiPanel = document.getElementById('ai-panel');
+    const aiClose = document.getElementById('ai-close-btn');
+    const aiMessages = document.getElementById('ai-messages');
+    const aiQuery = document.getElementById('ai-query');
+    const aiSendBtn = document.getElementById('ai-send-btn');
+    const aiApiKeyInput = document.getElementById('ai-api-key');
+    const aiModelSelect = document.getElementById('ai-model');
+
+    const AI_KEY_STORAGE = 'ai_api_key';
+    const AI_MODEL_STORAGE = 'ai_model';
+
+    if (localStorage.getItem(AI_KEY_STORAGE)) {
+        aiApiKeyInput.value = localStorage.getItem(AI_KEY_STORAGE);
+    }
+    if (localStorage.getItem(AI_MODEL_STORAGE)) {
+        aiModelSelect.value = localStorage.getItem(AI_MODEL_STORAGE);
+    }
+
+    aiApiKeyInput.addEventListener('change', () => {
+        localStorage.setItem(AI_KEY_STORAGE, aiApiKeyInput.value);
+    });
+    aiModelSelect.addEventListener('change', () => {
+        localStorage.setItem(AI_MODEL_STORAGE, aiModelSelect.value);
+    });
+
+    aiFab.addEventListener('click', () => {
+        aiPanel.classList.toggle('open');
+    });
+    aiClose.addEventListener('click', () => {
+        aiPanel.classList.remove('open');
+    });
+
+    function getCurrentFileContext() {
+        const contentDiv = document.getElementById('file-content');
+        if (contentDiv.style.display !== 'none' && contentDiv.textContent.trim()) {
+            const path = document.getElementById('pathInput').value || '根目录';
+            return `当前文件: ${path}\n文件内容:\n${contentDiv.textContent}`;
+        }
+        return null;
+    }
+
+    function addMessage(text, sender = 'bot') {
+        const div = document.createElement('div');
+        div.className = `ai-msg ${sender}`;
+        div.textContent = text;
+        aiMessages.appendChild(div);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+    }
+
+    async function callAI(prompt) {
+        const apiKey = aiApiKeyInput.value.trim();
+        if (!apiKey) {
+            addMessage('⚠️ 请先在 AI 面板顶部输入你的 API Key。', 'bot');
+            return;
+        }
+
+        const model = aiModelSelect.value;
+        let baseUrl = 'https://api.deepseek.com/v1/chat/completions';
+        if (model.startsWith('gpt')) {
+            baseUrl = 'https://api.openai.com/v1/chat/completions';
+        }
+
+        const context = getCurrentFileContext();
+        let finalPrompt = prompt;
+        if (context) {
+            finalPrompt = `【上下文信息】\n${context}\n\n【用户提问】\n${prompt}`;
+        }
+
+        addMessage('⏳ 思考中...', 'bot');
+        const loadingMsg = aiMessages.lastChild;
+
+        try {
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: '你是一个智能助手，帮助用户理解代码和管理 GitHub 仓库。回答要简洁准确。' },
+                        { role: 'user', content: finalPrompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 2000
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(`API 错误 (${response.status}): ${err.error?.message || '未知错误'}`);
+            }
+
+            const data = await response.json();
+            const reply = data.choices[0].message.content;
+            loadingMsg.textContent = reply;
+        } catch (error) {
+            loadingMsg.textContent = `❌ 请求失败: ${error.message}`;
+            console.error('AI 调用错误:', error);
+        }
+    }
+
+    async function sendQuery() {
+        const query = aiQuery.value.trim();
+        if (!query) return;
+        addMessage(query, 'user');
+        aiQuery.value = '';
+        await callAI(query);
+    }
+
+    aiSendBtn.addEventListener('click', sendQuery);
+    aiQuery.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendQuery();
+    });
+
+    // ================================================================
+    //  5. 初始化
+    // ================================================================
+    (function init() {
+        const autoLogged = tryAutoLogin();
+        if (!autoLogged) {
+            authContainer.style.display = 'block';
+            mainContainer.style.display = 'none';
+        }
+    })();
+</script>
+</body>
+</html>
